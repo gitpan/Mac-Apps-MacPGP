@@ -5,7 +5,7 @@
 #  Interface to MacPGP 2.6.3
 #
 #  Created:       Chris Nandor (pudge@pobox.com)         31-Dec-96
-#  Last Modified: Chris Nandor (pudge@pobox.com)         08-Jan-97
+#  Last Modified: Chris Nandor (pudge@pobox.com)         09-Feb-97
 #-----------------------------------------------------------------#
 package Mac::Apps::MacPGP;
 require 5.00201;
@@ -16,8 +16,8 @@ use Carp;
 @MacPGP::ISA = qw(Mac::Apps::MacPGP);
 @EXPORT = ();
 #-----------------------------------------------------------------
-$Mac::Apps::MacPGP::revision = '$Id: MacPGP.pm,v 1.0b2 1997/01/08 10:52 cnandor Exp $';
-$Mac::Apps::MacPGP::VERSION  = '1.0b2';
+$Mac::Apps::MacPGP::revision = '$Id: MacPGP.pm,v 1.0 1997/02/09 19:45 EST cnandor Exp $';
+$Mac::Apps::MacPGP::VERSION  = '1.0';
 local($be) = '';
 #-----------------------------------------------------------------
 use Mac::AppleEvents;
@@ -27,9 +27,14 @@ use Mac::MoreFiles(%Application);
 # Stuff
 #=================================================================
 sub new {
-	my $class = shift;
+	my $self = shift;
 	&_MpgpLaunchApp;
-	return bless{}, $class;
+	return bless{}, $self;
+}
+#-----------------------------------------------------------------
+sub DESTROY {
+	my $self = shift;
+	&_MpgpFrontApp($self->{MpgpMainApp}) if ($self->{MpgpSwitchApps} == 1 && $self->{MpgpMainApp});
 }
 #-----------------------------------------------------------------
 sub revision {
@@ -60,11 +65,12 @@ sub switchapp {
 	if ($app) {
 		$self->{MpgpMainApp} = $app;
 	}
+	&_MpgpFrontApp('MPGP') if ($self->{MpgpSwitchApps} == 1);
 }
 #-----------------------------------------------------------------
 sub quitpgp {
-	my($be) = AEBuildAppleEvent('aevt','quit',typeApplSignature,'MPGP',0,0,'') or croak $^E;
-	AESend($be, kAEWaitReply) or croak $^E;
+	my($be) = AEBuildAppleEvent('aevt','quit',typeApplSignature,'MPGP',0,0,'') || croak $^E;
+	AESend($be, kAEWaitReply) || croak $^E;
 }
 #=================================================================
 # Main subroutines
@@ -77,7 +83,7 @@ sub encrypt {
 	if (scalar(@{$p[2]})) 
 						{&_dObjData($p[2],'a')	}
 	elsif ($p[2])
-						{&_dObjData($p[2],'t')	} else {&_MpgpError('m','dObj')}
+						{&_dObjData($p[2],'t')	} else {&_MpgpError('m','dObj') unless ($ev eq 'ncrd')}
 	if ($ev ne 'cncr') {
 		if (scalar(@{$p[3]})) 
 						{&_recvData($p[3],'a')	}
@@ -113,7 +119,7 @@ sub decrypt {
 	if (scalar(@{$p[2]}))
 						{&_dObjData($p[2],'a')	}
 	elsif ($p[2])
-						{&_dObjData($p[2],'t')	} else {&_MpgpError('m','dObj')}
+						{&_dObjData($p[2],'t')	} else {&_MpgpError('m','dObj') unless ($ev eq 'dcrd')}
 	if ($p[3])			{&_passData($p[3])		}
 	if (defined $p[4])	{&_screData($p[4])		}
 	if (defined $p[5])	{&_nsigData($p[5])		}
@@ -131,7 +137,7 @@ sub sign {
 	if (scalar(@{$p[2]})) 
 						{&_dObjData($p[2],'a')	}
 	elsif ($p[2])
-						{&_dObjData($p[2],'t')	} else {&_MpgpError('m','dObj')}
+						{&_dObjData($p[2],'t')	} else {&_MpgpError('m','dObj') unless ($ev eq 'sigd')}
 	if ($p[3])			{&_passData($p[3])		}
 	if ($p[4])			{&_usidData($p[4])		}
 	if ($p[5])			{&_signData($p[5],'s')	}
@@ -470,9 +476,9 @@ sub _MpgpBShort {
 #-----------------------------------------------------------------
 sub _MpgpBBool {
 	my($data,$type) = @_;
-	if ($data == 1) {
+	if ($data eq '1') {
 		$data = 'true';
-	} elsif ($data == 0) {
+	} elsif ($data eq '0') {
 		$data = 'fals';
 	} else {
 		&_MpgpError('b',$type);
@@ -498,11 +504,12 @@ sub _MpgpBTextArray {
 # Main processing
 #=================================================================
 sub _MpgpLaunchApp {
+	my($app) = shift || 'MPGP';
 	my(%Launch);
 	tie %Launch, LaunchParam;
 	$Launch{launchControlFlags} = launchContinue+launchNoFileFlags+launchDontSwitch;
-	$Launch{launchAppSpec}		= $Application{'MPGP'};
-	LaunchApplication(\%Launch) orÊcroak "$^E";
+	$Launch{launchAppSpec}		= $Application{$app};
+	LaunchApplication(\%Launch) orÊcroak $^E;
 }
 #-----------------------------------------------------------------
 sub _MpgpFrontApp {
@@ -511,7 +518,7 @@ sub _MpgpFrontApp {
 	tie %Launch, LaunchParam;
 	$Launch{launchControlFlags} = launchContinue+launchNoFileFlags;
 	$Launch{launchAppSpec}		= $Application{$app};
-	LaunchApplication(\%Launch) orÊcroak "$^E";
+	LaunchApplication(\%Launch) orÊcroak $^E;
 }
 #-----------------------------------------------------------------
 sub _MpgpError {
@@ -534,14 +541,14 @@ sub _MpgpError {
 sub _MpgpAeBuild {
 	my($ev,$st) = @_;
 	$st = 'MPGP' if (!$st);
-	my($be) = AEBuildAppleEvent($st,$ev,typeApplSignature,'MPGP',0,0,'') or croak $^E;
+	my($be) = AEBuildAppleEvent($st,$ev,typeApplSignature,'MPGP',0,0,'') || croak $^E;
 	return $be;
 }
 #-----------------------------------------------------------------
 sub _MpgpAePrint {
 	my($self,$rp) = @_;
 	my(@ar,%ar,$ar,$at);
-	@ar = ('----','errn','errs','outp','kyid');
+	@ar = ('----','errn','errs','outp');
 	foreach $ar(@ar) {
 		if ($at = AEGetParamDesc($rp,$ar)) {
 			$ar{$ar} = AEPrint($at);
@@ -565,9 +572,7 @@ sub _MpgpAePrint {
 #-----------------------------------------------------------------
 sub _MpgpAeProcess {
 	my($self) = shift;
-	&_MpgpFrontApp('MPGP') if ($self->{MpgpSwitchApps} == 1);
-	my($rp) = AESend($be, kAEWaitReply) or croak $^E;
-	&_MpgpFrontApp($self->{MpgpMainApp}) if ($self->{MpgpSwitchApps} == 1 && $self->{MpgpMainApp});
+	my($rp) = AESend($be, kAEWaitReply) || croak $^E;
 	return &_MpgpAePrint($self,$rp);
 }
 #-----------------------------------------------------------------#
@@ -581,507 +586,474 @@ MacPGP.pm
 =head1 SYNOPSIS
 
 	use Mac::Apps::MacPGP;
-	$macpgp = new MacPGP;
+	$object = new MacPGP;
+
 
 =head1 DESCRIPTION
 
-MacPerl interface to MacPGP 2.6.3.  Older versions WILL NOT WORK.  The MIT version, MacPGP 2.6.2, does not support nearly the number of AppleEvents as does 2.6.3.  For those outside the U.S., you will not be able to download the program; but there are Japanese and International versions.  Perhaps in the future I will add support for those.  Many of the functions should work fine for those, actually, but imagine some will not.
+MacPerl interface to MacPGP 2.6.3.  Older versions WILL NOT WORK.  The MIT version, MacPGP 2.6.2, does not support nearly the number of AppleEvents as does 2.6.3.  For those outside the U.S., you will not be able to download the program; but there are International versions.  Perhaps in the future I will add support for those.  Many of the functions should work fine for those, actually, but I imagine some will not.
 
-MacPerl 5.1.1 (released January 1997) is also required because of bugs in the AppleEvents library in previous versions.
+MacPerl 5.1.1 (released January 1997) or higher is also required because of bugs in the AppleEvents library in previous versions.
 
 =head1 NOTES
 
-For optional parameters, MacPGP will either use the default or prompt the user.  Parameters are required unless noted as optional.  For further explanation of methods and parameters, see your MacPGP 2.6.3 user guide.  
+For optional parameters, MacPGP will either use the default or prompt the user.  Parameters are required unless noted as optional.  Exception: For the C<$OUTP> parameter, the MacPGP default is binary but I set it to ASCII in the module, because I rarely use binary PGP files.
 
-Boolean parameters take a value of 1 (true) or 0 (false).  Filenames should be given the full pathname.  To leave an optional parameter empty, give it a value of ''.  Optional parameters will either be given the default by MacPGP or MacPGP will prompt the user for a value if necessary.  For the 'outp' parameter, the MacPGP default is binary but I set it to ASCII in the module.
+Boolean parameters take a value of 1 (true) or 0 (false).  Filenames should be given the full pathname.  To leave an optional parameter empty, give it a value of C<undef>.  Optional parameters will either be given the default by MacPGP or MacPGP will prompt the user for a value if necessary.  
 
-If something seems seems to not work properly, try doing it directly from MacPGP before assuming it is the fault of MacPGP.pm.  :)
+For further explanation of methods and parameters, see your MacPGP 2.6.3 user guide.  
+
+If something seems seems to not work properly, try doing it directly from MacPGP before assuming it is the fault of MacPGP.pm.  :-)
 
 =head1 USAGE
 
 =head2 encrypt
 
-Encrypt.  Returns encrypted text for $type = 'ncrd'.
+Encrypt.  Returns encrypted text for C<$TYPE="ncrd">.
 
-$macpgp->encrypt($type, $dObj, [$recv|$cpas], $pass, $usid, $sign, $read, $outp, $lati, $wrap, $alns, $tabx, $mdal, $wsrc, $copt);
+$object->encrypt(TYPE, DOBJ, [RECV|CPAS], PASS, USID, SIGN, READ, OUTP, LATI, WRAP, ALNS, TABX, MDAL, WSRC, COPT);
 
-=over 4
+=item TYPE
 
-=item $type
+One of "encr" (encrypt files), "ncrd" (encrypt data), or "cncr" (conventional encryption).
 
-One of 'encr' (encrypt files), 'ncrd' (encrypt data), or 'cncr' (conventional encryption).
+=item DOBJ
 
-=item $dObj
+For C<$TYPE="encr"> or C<"cncr">, C<$DOBJ> is either a filename or a reference to an array of filenames.  For C<$TYPE="ncrd">, C<$DOBJ> is the data to be encrypted.  If C<$DOBJ> is empty, MacPGP will attempt to encrypt the clipboard instead.
 
-For $type='encr' or 'cncr', $dObj is either a filename or a reference to an array of filenames.  For $type='ncrd', $dObj is the data to be encrypted.  If $dObj is empty, MacPGP will attempt to encrypt the clipboard instead.
-
-=item $recv
+=item RECV
 
 Either the name of a recipient or a reference to an array of recipients.  (encr and ncrd only)
 
-=item $cpas
+=item CPAS
 
 Password used for conventional encryption.  Optional.  (cncr only)
 
-=item $pass
+=item PASS
 
 The password.  Optional.
 
-=item $usid
+=item USID
 
 Name of secret key.  Optional.
 
-=item $sign
+=item SIGN
 
-Sign?  One of 'sepa' (signature in separate file), 'incl', (signature included), 'omit' (omitted, don't sign).  Optional.
+Sign?  One of "sepa" (signature in separate file), "incl", (signature included), "omit" (omitted, don't sign).  Optional.
 
-=item $read
+=item READ
 
-Input format.  One of 'macb' (MacBinarize first), 'text', (convert text to CRLF), 'norm' (do nothing).  Optional.
+Input format.  One of "macb" (MacBinarize first), "text", (convert text to CRLF), "norm" (do nothing).  Optional.
 
-=item $outp
+=item OUTP
 
-Output format.  One of 'bina' (8-bit binary), 'asci', (ASCII-armored).  Optional.
+Output format.  One of "bina" (8-bit binary), "asci", (ASCII-armored).  Optional.
 
-=item $lati
+=item LATI
 
 Convert text to ISO-Latin1?  Boolean.  Optional.
 
-=item $wrap
+=item WRAP
 
 Wrap text to this many lines, between 30 and 100.  0=no wrap.  Optional.
 
-=item $alns
+=item ALNS
 
 For armored files, split output into files of this line length.  0=no split.  Optional.
 
-=item $tabx
+=item TABX
 
 For wrapped files, expand tabs to this many spaces, from 0 to 9.  Optional.
 
-=item $mdal
+=item MDAL
 
-Use 'MD5 ' or 'SHA1' to compute message digest for file.  Optional.
+Use "MD5 " or "SHA1" to compute message digest for file.  Optional.
 
-=item $wsrc
+=item WSRC
 
 Wipe out source file?  Boolean.  Optional.  (encr and cncr only)
 
-=item $copt
+=item COPT
 
-Self-decrypting?  One of 'sdf' (self-decrypting) or 'sdfb', (self-decrypting and binhexed).  Default is neither.  Optional. (cncr only)
-
-=back
+Self-decrypting?  One of "sdf" (self-decrypting) or "sdfb", (self-decrypting and binhexed).  Default is neither.  Optional. (cncr only)
 
 =head2 decrypt
 
-Decrypt.  Returns decrypted text for $type = 'dcrd' and $dObj ne ''.  Returns signatures for $type = 'decr'.
+Decrypt.  Returns decrypted text for C<$TYPE="dcrd"> and C<$DOBJ ne undef>.  Returns signatures for C<$TYPE="decr">.
 
-$macpgp->decrypt($type, $dObj, $pass, $scre, $nsig, $apl2, $recv);
+$object->decrypt(TYPE, DOBJ, PASS, SCRE, NSIG, APL2, RECV);
 
-=over 4
+=item TYPE
 
-=item $type
+One of "decr" (decrypt files), "dcrd" (decrypt data).
 
-One of 'decr' (decrypt files), 'dcrd' (decrypt data).
+=item DOBJ
 
-=item $dObj
+For C<$TYPE="decr">, C<$DOBJ> is either a filename or a reference to an array of filenames.  For C<$TYPE="dcrd">, C<$DOBJ> is the data to be decrypted.  If C<$DOBJ> is empty, MacPGP will attempt to decrypt the clipboard instead.  To get signatures from "dcrd" event, see L<"checksignresult">.
 
-For $type='decr', $dObj is either a filename or a reference to an array of filenames.  For $type='dcrd', $dObj is the data to be decrypted.  If $dObj is empty, MacPGP will attempt to decrypt the clipboard instead.  To get signatures from 'dcrd' event, see L<"checksignresult">.
-
-=item $pass
+=item PASS
 
 The password.  Optional.
 
-=item $scre
+=item SCRE
 
 Decrypt to screen instead of file?  Boolean.  Optional.
 
-=item $nsig
+=item NSIG
 
 Do not put up bad signature alerts?  Boolean.  Optional.
 
-=item $apl2
+=item APL2
 
 If direct object is a separate sig file, the file the sig applies to.  Optional.
 
-=item $recv
+=item RECV
 
 File to decrypt to.  Optional. (decr only)
 
-=back
-
 =head2 sign
 
-Sign.  Returns encrypted signed text for $type = 'sigd', returns signature results for $type = 'sign'.
+Sign.  Returns encrypted signed text for C<$TYPE="sigd">, returns signature results for C<$TYPE="sign">.
 
-$macpgp->sign($type, $dObj, $pass, $usid, $sign, $read, $outp, $lati, $wrap, $alns, $tabx, $mdal, $stfx);
+$object->sign(TYPE, DOBJ, PASS, USID, SIGN, READ, OUTP, LATI, WRAP, ALNS, TABX, MDAL, STFX);
 
-=over 4
+=item TYPE
 
-=item $type
+One of "sign" (sign files), "sigd" (sign data).
 
-One of 'sign' (sign files), 'sigd' (sign data).
+=item DOBJ
 
-=item $dObj
+For C<$TYPE="sign">, C<$DOBJ> is either a filename or a reference to an array of filenames.  For C<$TYPE="sigd">, C<$DOBJ> is the data to be signed.  If C<$DOBJ> is empty, MacPGP will attempt to sign the clipboard instead.
 
-For $type='sign', $dObj is either a filename or a reference to an array of filenames.  For $type='sigd', $dObj is the data to be signed.  If $dObj is empty, MacPGP will attempt to sign the clipboard instead.
-
-=item $pass
+=item PASS
 
 The password.  Optional.
 
-=item $usid
+=item USID
 
 Name of secret key.  Optional.
 
-=item $sign
+=item SIGN
 
-Sign?  One of 'sepa' (signature in separate file), 'incl', (signature included), 'omit' (omitted, don't sign).  Optional.
+Sign?  One of "sepa" (signature in separate file), "incl", (signature included), "omit" (omitted, don't sign).  Optional.
 
-=item $read
+=item READ
 
-See $read in L<"encrypt">.  Optional.
+See READ in L<"encrypt">.  Optional.
 
-=item $outp
+=item OUTP
 
-See $outp in L<"encrypt">.  Optional.
+See OUTP in L<"encrypt">.  Optional.
 
-=item $lati
+=item LATI
 
-See $lati in L<"encrypt">.  Optional.
+See LATI in L<"encrypt">.  Optional.
 
-=item $wrap
+=item WRAP
 
-See $wrap in L<"encrypt">.  Optional.
+See WRAP in L<"encrypt">.  Optional.
 
-=item $alns
+=item ALNS
 
-See $alns in L<"encrypt">.  Optional.
+See ALNS in L<"encrypt">.  Optional.
 
-=item $tabx
+=item TABX
 
-See $tabx in L<"encrypt">.  Optional.
+See TABX in L<"encrypt">.  Optional.
 
-=item $mdal
+=item MDAL
 
-See $mdal in L<"encrypt">.  Optional.
+See MDAL in L<"encrypt">.  Optional.
 
-=item $stfx
+=item STFX
 
 Set text flag? (Esoteric option for some PGP/MIME implementations.)  Boolean.  Optional.
-
-=back
 
 =head2 asciify
 
 Asciify a file.
 
-$macpgp->asciify($dObj, $read, $lati, $wrap, $alns, $tabx);
+$object->asciify(DOBJ, READ, LATI, WRAP, ALNS, TABX);
 
-=over 4
-
-=item $dObj
+=item DOBJ
 
 Filename or reference to an array of filenames to be asciified.
 
-=item $read
+=item READ
 
-See $read in L<"encrypt">.  Optional.
+See READ in L<"encrypt">.  Optional.
 
-=item $lati
+=item LATI
 
-See $lati in L<"encrypt">.  Optional.
+See LATI in L<"encrypt">.  Optional.
 
-=item $wrap
+=item WRAP
 
-See $wrap in L<"encrypt">.  Optional.
+See WRAP in L<"encrypt">.  Optional.
 
-=item $alns
+=item ALNS
 
-See $alns in L<"encrypt">.  Optional.
+See ALNS in L<"encrypt">.  Optional.
 
-=item $tabx
+=item TABX
 
-See $tabx in L<"encrypt">.  Optional.
-
-=back
+See TABX in L<"encrypt">.  Optional.
 
 =head2 execute
 
 Execute MacPGP command-line command.
 
-$macpgp->execute($dObj, $pass, $lati, $wrap, $alns, $tabx, $mdal);
+$object->execute(DOBJ, PASS, LATI, WRAP, ALNS, TABX, MDAL);
 
-=over 4
+=item DOBJ
 
-=item $dObj
+Command to be executed (i.e., C<pgp -kv pudge>).
 
-Command to be executed (i.e., 'pgp -kv pudge').
-
-=item $pass
+=item PASS
 
 The password.  Optional.
 
-=item $lati
+=item LATI
 
-See $lati in L<"encrypt">.  Optional.
+See LATI in L<"encrypt">.  Optional.
 
-=item $wrap
+=item WRAP
 
-See $wrap in L<"encrypt">.  Optional.
+See WRAP in L<"encrypt">.  Optional.
 
-=item $alns
+=item ALNS
 
-See $alns in L<"encrypt">.  Optional.
+See ALNS in L<"encrypt">.  Optional.
 
-=item $tabx
+=item TABX
 
-See $tabx in L<"encrypt">.  Optional.
+See TABX in L<"encrypt">.  Optional.
 
-=item $mdal
+=item MDAL
 
-See $mdal in L<"encrypt">.  Optional.
-
-=back
+See MDAL in L<"encrypt">.  Optional.
 
 =head2 generate
 
 Generate new public/secret key pair.
 
-$macpgp->generate($dObj, $leng, $ebit);
+$object->generate(DOBJ, LENG, EBIT);
 
-=over 4
-
-=item $dObj
+=item DOBJ
 
 User id of new key.
 
-=item $leng
+=item LENG
 
-Bit length of key.  Higher is stronger and slower.  Lower is faster and less secure.  Can be either a number from 384 to 2048, or one of the following: 'casu' (casual, 512), 'comm' (commercial, 768), 'mili' (military, 1024).  Default is casual.  Optional.
+Bit length of key.  Higher is stronger and slower.  Lower is faster and less secure.  Can be either a number from 384 to 2048, or one of the following: "casu" (casual, 512), "comm" (commercial, 768), "mili" (military, 1024).  Default is casual.  Optional.
 
-=item $ebit
+=item EBIT
 
 Number of bits in encryption exponent.  Default is 17.  Optional.
-
-=back
 
 =head2 extract
 
 Extract (export) a key.
 
-$macpgp->extract($dObj, $recv, $keyr, $outp);
+$object->extract(DOBJ, RECV, KEYR, OUTP);
 
-=over 4
-
-=item $dObj
+=item DOBJ
 
 Key id to extract.
 
-=item $recv
+=item RECV
 
-File to extract key to.  File must already exist (I think this is a MacPGP bug, but maybe I'm just an idiot)!  See L<"create">.
+File to extract key to.  File must already exist (for now).  See L<"create">.
 
-=item $keyr
+=item KEYR
 
 Filename of keyring to perform operation on.  Optional.
 
-=item $outp
+=item OUTP
 
-Output format.  One of 'bina' (8-bit binary), 'asci', (ASCII-armored).  Optional.
-
-=back
+Output format.  One of "bina" (8-bit binary), "asci", (ASCII-armored).  Optional.
 
 =head2 keyring
 
 Miscellaneous keyring functions.
 
-$macpgp->keyring($type, $dObj, $keyr, $usid);
+$object->keyring(TYPE, DOBJ, KEYR, USID);
 
-=over 4
-
-=item $type
+=item TYPE
 
 =over 4
 
 =item addk
 
-Add key in file $dObj.
+Add key in file C<$DOBJ>.
 
 =item ckey
 
-Count keys matching $dObj.
+Count keys matching C<$DOBJ>.
 
 =item crfy
 
-Certify key matching $dObj.
+Certify key matching C<$DOBJ>.
 
 =item fing
 
-Return fingerprint of key matching $dObj.
+Return fingerprint of key matching C<$DOBJ>.
 
 =item remv
 
-Remove key matching $dObj.
+Remove key matching C<$DOBJ>.
 
 =item selk
 
-Show dialog box, with text $dObj, of keys available in keyring.  Returns key id of selected key.
+Show dialog box, with text C<$DOBJ>, of keys available in keyring.  Returns user id of selected key.
 
 =back
 
-=item $dObj
+=item DOBJ
 
 Varies; see above.
 
-=item $keyr
+=item KEYR
 
 Filename of keyring to perform operation on.  Optional.
 
-=item $usid
+=item USID
 
 Name of secret key to certify with.  Optional. (crfy only)
-
-=back
 
 =head2 create
 
 Create temporary scratch file.  File with same name, if existing, is erased.
 
-$macpgp->create($dObj);
+$object->create(DOBJ);
 
-=over 4
-
-=item $dObj
+=item DOBJ
 
 New filename.
-
-=back
 
 =head2 clip2file
 
 Copy Clipboard to file.
 
-$macpgp->clip2file($dObj);
+$object->clip2file(DOBJ);
 
-=over 4
-
-=item $dObj
+=item DOBJ
 
 Filename of destination file.
 
-=back
-
 =head2 file2clip
 
-Copy file to Clipboard.  NOTE:  This only seems to work if MacPGP is the front application (see L<"switchapp">).
+Copy file to Clipboard.  NOTE:  This only works if MacPGP is the front application (see L<"switchapp">).
 
-$macpgp->file2clip($dObj);
+$object->file2clip(DOBJ);
 
-=over 4
-
-=item $dObj
+=item DOBJ
 
 Filename of source file.
 
-=back
-
 =head2 checksignresult
 
-Check signature result from previous $macpgp->decrypt('dcrd').
+Check signature result from previous decrypt data event.  See L<"decrypt">.
 
-$macpgp->checksignresult;
+$object->checksignresult;
 
 =head2 getlasterror
 
 Returns error message from previous MacPGP Apple Event.
 
-$macpgp->getlasterror;
+$object->getlasterror;
 
 =head2 getversion
 
 Returns MacPGP version.
 
-$macpgp->getversion;
+$object->getversion;
 
 =head2 window
 
 Show/hide window.
 
-$macpgp->window($dObj);
+$object->window(DOBJ);
 
-=over 4
+=item DOBJ
 
-=item $dObj
-
-Either 'show' or 'hide'.
-
-=back
+Either "show" or "hide".
 
 =head2 logfile
 
 Echo PGP messages to a logfile.  If logging was active when true sent or no filename is given, returns error. If logging was active.  Returns full pathname if successful.
 
-$macpgp->logfile($dObj, $recv);
+$object->logfile(DOBJ, RECV);
 
-=over 4
-
-=item $dObj
+=item DOBJ
 
 Logging?  Boolean.
 
-=item $recv
+=item RECV
 
 Full pathname of logfile.  Existing file of same name erased.  Optional.
 
-=back
-
 =head2 switchapp
 
-Set up window handling.  Whenever another method is called, MacPGP.pm will use these two variables to determine what app should be in front.  Note:  when muliple methods are called, this doesn't seem to work great.  Oh well.  Maybe someone else will fix this for me or have some ideas.  Until then, I suggest that if you DO want MacPGP to come to the front and you have sveral methods being called one after the other, that you just set $macpgp->switchapp(1) and don't have it switch back.
+Set up window handling.  Whenever another method is called, MacPGP.pm will use these two variables to determine what app should be in front.  Note:  when muliple methods are called, this doesn't seem to work great.  Oh well.  Maybe someone else will fix this for me or have some ideas.  Until then, I suggest that if you DO want MacPGP to come to the front and you have sveral methods being called one after the other, that you just set C<$object->switchapp(1)> and don't have it switch back.
 
-$macpgp->switchapp($switch, $app);
+$object->switchapp(SWITCH, APP);
 
-=over 4
+=item SWITCH
 
-=item $switch
+Switch to MacPGP when method is called?  Boolean.
 
-Switch to MacPGP when method is run?  Boolean.
+=item APP
 
-=item $app
-
-Switch to $app after method is finished.  If left blank and $switch = 1, MacPGP will go to front and stay there.
-
-=back
+Switch to C<$APP> after C<$object> is destroyed (i.e., when last reference to C<$object> is made).  If left blank and C<$SWITCH=1>, MacPGP will go to front and stay there.
 
 =head2 getresults
 
-Returns result of parameter $dObj from last method call.
+Returns result of parameter C<$DOBJ> from last method call.
 
-$macpgp->getresults($dObj);
+$object->getresults(DOBJ);
 
-=over 4
+=item DOBJ
 
-=item $dObj
-
-Name of parameter keyword, one of '----', 'result' (synonym for '----', the direct object parameter), 'errs' (error string), 'errn' (error number), 'outp', 'kyid'.  Optional, defaults to 'result'.
-
-=back
+Name of parameter keyword, one of "----", "result" (synonym for "----", the direct object parameter), "errs" (error string), "errn" (error number), "outp".  Optional, defaults to "result".
 
 =head2 getresultsall
 
-Returns hash of all result parameters froim last method call.
+Returns hash of all result parameters from last method call.
 
-%results = $macpgp->getresultsall;
+%results = $object->getresultsall;
 
 =head2 quitpgp
 
 Quit MacPGP app.
 
-$macpgp->quitpgp;
+$object->quitpgp;
 
 =head1 VERSION NOTES
+
+=item v.1.0, February 9, 1997
+
+First full release.
+
+=over 4
+
+=item *
+
+Added a whole slew of scripts and extensions for BBEdit, YA-NewsWatcher, Clipboard, Drag-n-Drop.  See MacPGP-scripts.readme for details.
+
+=item *
+
+Changed the behavior of C<switchapp> method.  Switching to MacPGP only occurs when C<switchapp> method is invoked, and switching back only occurs when object is destroyed.  Previously, switching took place before and after each method call.
+
+=item *
+
+Fixed bug which required C<decrypt>, C<encrypt> and C<sign> to have a DOBJ value.  When one of those methods is performing a function on data (dcrd, ncrd, sigd), MacPGP will use Clipboard if no data is given.
+
+=item *
+
+Fixed bug in C<_MpgpBBool> routine which would not catch unacceptable input.
+
+=back
 
 =item v.1.0b3, January 15, 1997
 
@@ -1089,7 +1061,7 @@ Simply switching to .tar.gz for CPAN instead of .sit.hqx.
 
 =item v.1.0b2 January 8, 1997
 
-Second release.  Fixes problems in earlier release, optimizes, module-izes.
+Fixes problems in earlier release, optimizes, module-izes.
 
 =over 4
 
@@ -1107,19 +1079,23 @@ Improved error handling and descriptions.  Uses C<carp> for MacPGP errors.
 
 =item *
 
-Made file and recipients variables capable of handling either one scalar or a reference to an array.
+Made file and recipients variables capable of handling either a scalar or a reference to an array.
 
 =item *
 
-Added C<switchapp()>, C<getresults()>, C<getresultsall>, C<quitpgp> methods.  See docs above.
+Added C<switchapp>, C<getresults>, C<getresultsall>, C<quitpgp> methods.  See docs above.
 
 =back
 
 =item v.1.0b1, January 3, 1997
 
-First release.  Nearly fully-functional.
+First public beta.  Nearly fully-functional.
 
 =head1 BUGS / TO DO
+
+=item app switching
+
+I want to benchmark different ways to switch between applications and use the best one.  Stay tuned.  If you have ideas, let me know.
 
 =item other versions
 
@@ -1127,7 +1103,7 @@ I am investigating the idea of making this useful with other versions of MacPGP 
 
 =item stealthify
 
-I have one more method group to add, and that is for stealtifying/destealthifying files.  This will come along eventually, but it is not a high priority.  First I have to figure out how to use it and what it does ... :-)
+I have one more method group to add, and that is for stealtifying/destealthifying files.  This will come along eventually, but it is not a high priority.  First I have to figure out how to use it and what it does ... :-)  If you have a need/want for it, let me know.
 
 =head1 SEE ALSO
 
@@ -1141,7 +1117,7 @@ Included with the above package, take special note of the PGP User's Guide, MacP
 
 =head1 AUTHOR / COPYRIGHT
 
-Chris Nandor, 08-Jan-1996
+Chris Nandor, 09-Feb-1997
 
 	mailto:pudge@pobox.com
 	http://pudge.net/
@@ -1149,4 +1125,3 @@ Chris Nandor, 08-Jan-1996
 Copyright (c) 1997 Chris Nandor.  All rights reserved.  This program is free software; you can redistribute it and/or modify it under the same terms as Perl itself.  Please see the Perl Artistic License.
 
 =cut
-

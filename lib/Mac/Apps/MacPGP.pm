@@ -1,27 +1,16 @@
 #!perl -w
-#-----------------------------------------------------------------#
-#  MacPGP.pm
-#  pudge
-#  Interface to MacPGP 2.6.3
-#
-#  Created:       Chris Nandor (pudge@pobox.com)         31-Dec-96
-#  Last Modified: Chris Nandor (pudge@pobox.com)         13-Oct-97
-#-----------------------------------------------------------------#
 package Mac::Apps::MacPGP;
-require 5.00201;
+require 5.004;
+use vars qw($VERSION $be @ISA @EXPORT);
+use strict;
 use Exporter;
 use Carp;
-#-----------------------------------------------------------------
-@ISA = qw(Exporter);
-@MacPGP::ISA = qw(Mac::Apps::MacPGP);
-@EXPORT = ();
-#-----------------------------------------------------------------
-$Mac::Apps::MacPGP::revision = '$Id: MacPGP.pm,v 1.1 1997/10/13 16:48 EDT cnandor Exp $';
-$Mac::Apps::MacPGP::VERSION  = '1.1';
-local($be) = '';
-#-----------------------------------------------------------------
 use Mac::AppleEvents;
 use Mac::Apps::Launch;
+@ISA = qw(Exporter);
+@EXPORT = ();
+$VERSION = sprintf("%d.%02d", q$Revision: 1.20 $ =~ /(\d+)\.(\d+)/);
+$be = '';
 #=================================================================
 # Stuff
 #=================================================================
@@ -33,15 +22,7 @@ sub new {
 #-----------------------------------------------------------------
 sub DESTROY {
 	my $self = shift;
-	&_MpgpFrontApp($self->{MpgpMainApp}) if ($self->{MpgpSwitchApps} == 1 && $self->{MpgpMainApp});
-}
-#-----------------------------------------------------------------
-sub revision {
-	return $revision;
-}
-#-----------------------------------------------------------------
-sub version {
-	return $VERSION;
+	&_MpgpFrontApp($self->{MpgpMainApp}) if ($self->{MpgpSwitchApps} && $self->{MpgpSwitchApps} == 1 && $self->{MpgpMainApp});
 }
 #-----------------------------------------------------------------
 sub getresults {
@@ -65,12 +46,14 @@ sub switchapp {
 		$self->{MpgpMainApp} = $app;
 	}
 	&_MpgpFrontApp('MPGP') if ($self->{MpgpSwitchApps} == 1);
+	return 1;
 }
 #-----------------------------------------------------------------
 sub quitpgp {
 	my($be) = AEBuildAppleEvent('aevt','quit',typeApplSignature,'MPGP',0,0,'') || croak $^E;
 	AESend($be, kAEWaitReply) || croak $^E;
 	AEDisposeDesc $be;
+	return 1;
 }
 #=================================================================
 # Main subroutines
@@ -573,18 +556,18 @@ sub _MpgpAeProcess {
 	return &_MpgpAePrint($self,$rp);
 }
 #-----------------------------------------------------------------#
-
+1;
 __END__
 
 =head1 NAME
 
-MacPGP.pm
+Mac::Apps::MacPGP - Interface to MacPGP 2.6.3
 
 =head1 SYNOPSIS
 
 	use Mac::Apps::MacPGP;
-	$object = new MacPGP;
-
+	$object = new Mac::Apps::MacPGP;
+	#see description for the rest
 
 =head1 DESCRIPTION
 
@@ -592,9 +575,7 @@ MacPerl interface to MacPGP 2.6.3.  Older versions WILL NOT WORK.  The MIT versi
 
 MacPerl 5.1.1 (released January 1997) or higher is also required because of bugs in the AppleEvents library in previous versions.
 
-Also required is the Mac::Apps::Launch module.
-
-=head1 NOTES
+Also required is the Mac::Apps::Launch module, however, which requires MacPerl 5.1.4r4 or higher.  :)
 
 For optional parameters, MacPGP will either use the default or prompt the user.  Parameters are required unless noted as optional.  Exception: For the C<$OUTP> parameter, the MacPGP default is binary but I set it to ASCII in the module, because I rarely use binary PGP files.
 
@@ -1028,7 +1009,11 @@ Quit MacPGP app.
 
 $object->quitpgp;
 
-=head1 VERSION NOTES
+=head1 HISTORY
+
+=item v.1.2, January 3, 1998
+
+Basic cleanup.  Requires MacPerl 5.1.4r4 or better now.
 
 =item v.1.1, October 13, 1997
 
@@ -1094,7 +1079,7 @@ Added C<switchapp>, C<getresults>, C<getresultsall>, C<quitpgp> methods.  See do
 
 First public beta.  Nearly fully-functional.
 
-=head1 BUGS / TO DO
+=head1 BUGS
 
 =item app switching
 
@@ -1118,13 +1103,15 @@ http://www.math.ohio-state.edu/~fiedorow/PGP/
 
 Included with the above package, take special note of the PGP User's Guide, MacPGP263_Manual, and MacPGP263_AppleEvents.
 
-=head1 AUTHOR / COPYRIGHT
+=head1 AUTHOR
 
-Chris Nandor, 13-Oct-1997
+Chris Nandor F<E<lt>pudge@pobox.comE<gt>>
+http://pudge.net/
 
-	mailto:pudge@pobox.com
-	http://pudge.net/
+Copyright (c) 1998 Chris Nandor.  All rights reserved.  This program is free software; you can redistribute it and/or modify it under the same terms as Perl itself.  Please see the Perl Artistic License.
 
-Copyright (c) 1997 Chris Nandor.  All rights reserved.  This program is free software; you can redistribute it and/or modify it under the same terms as Perl itself.  Please see the Perl Artistic License.
+=head1 VERSION
+
+Version 1.20 (03 January 1998)
 
 =cut

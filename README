@@ -1,25 +1,15 @@
 -----BEGIN PGP SIGNED MESSAGE-----
 
-October 13, 1997
+Monday, January 5, 1998
 
-This is MacPGP.pm 1.1, a Perl interface to MacPGP 2.6.3.
+This is MacPGP.pm 1.2, a Perl interface to MacPGP 2.6.3.
 
 REQUIREMENTS:
-*MacPGP 2.6.3 is REQUIRED!  See the pod documentation for more info.
-*MacPerl 5.1.1 (just released in January 1997) is REQUIRED for fixed
-    AppleEvents library.
+*MacPGP 2.6.3
+*MacPerl 5.1.4r4
+*Mac::Apps::Launch
 *You might have to give MacPerl an extra meg of memory, I've had some
     problems with it quitting out on me.
-*Mac::Apps::Launch is required
-
-To install it, just drop the file MacPGP.pm in the directory
-lib:Mac:Apps (this has changed from the beta 2).  Carefully look over
-the pod documentation that is included in the MacPGP.pm file.  You can
-view it with Shuck (which accompanies MacPerl 5.1.1) or with the pod2x
-translators in the MacPerl pod directory.
-
-There are a couple of behavioral changes and bug fixes from beta 2/3.
-See the embedded pod for more information.
 
 This archive can always be obtained from:
 
@@ -27,28 +17,31 @@ This archive can always be obtained from:
     http://perl.com/CPAN/authors/id/CNANDOR/
     http://perl.com/CPAN/modules/by-module/Mac/
 
-The file is a tarred, gzipped file.  After you use Stuffit Expander or a
-similar program to get at the archive, you can use the file
-Macpgp.pm.asc to determine whether or not the file came from me.
+The file is a tarred, gzipped file.  Use Stuffit Expander or a
+similar program to get at the archive.
 
-First you have to have my key in your public keyring (it is in the file
-key.asc).  Then decrypt the file Macpgp.pm.asc with MacPGP. MacPGP will
-confirm that it is my singature to the file MacPGP.pm.
+You can use the file MacPGP.pm.asc to determine whether or not the 
+file came from me.  First you have to have my key in your public 
+keyring (it is in the file key.asc).  Then decrypt the file 
+MacPGP.pm.asc with MacPGP. MacPGP will confirm that it is my singature 
+to the file MacPGP.pm.
 
-I think that is about it.  Let me know how things work out, and any
-bugs, typos, suggestions, or anything else.
+Please let me know how well it does(n't) work, and any changes you'd 
+like to see.
 
 - --
-Chris Nandor             pudge@pobox.com             http://pudge.net/
+Chris Nandor               pudge@pobox.com           http://pudge.net/
 %PGPKey=('B76E72AD',[1024,'0824 090B CE73 CA10  1FF7 7F13 8180 B6B6'])
+#==                    MacPerl: Power and Ease                     ==#
+#==    Publishing Date: Early 1998. http://www.ptf.com/macperl/    ==#
 
 -----BEGIN PGP SIGNATURE-----
 Version: PGPfreeware 5.0 for non-commercial use <http://www.pgp.com>
 Charset: noconv
 
-iQCVAwUBNEKOkShcZja3bnKtAQHulgP9HkWi4WJbrkXOSy9J12+ZdkOrX6HwDFkF
-nMBTYceBa1lrKtnBzEVk5Wc0FdD2SgFwfLiwVoZZs6jps0yeyItkDYx0VucrRNR6
-xIAUkx6s5F5VkDfbdw0ryClc+JMB1F6VA70xNjB15jOgZoq5JWsom/1dTA8RAt5Z
-TKeV6Wy/Luw=
-=AIZJ
+iQCVAwUBNLI9FChcZja3bnKtAQFrYAP8DIyjmHIXH7fKpnLafzGnbGW5KO92r0Tr
+eNmZNqhe3aK4v7u5UnF1SWOOUVtSe7je2YwQuiKQKYxfPL3G9TxEHk0Wp2ZJpFS3
+WpPQ4PEez041Na3YYbtwiyRn1LVf3noRSkW1g8ESn38a9wvOZRwwv2QTq8IA1PF1
+0FWXMNrYbH0=
+=l+he
 -----END PGP SIGNATURE-----

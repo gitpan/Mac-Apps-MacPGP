@@ -1,8 +1,8 @@
 -----BEGIN PGP SIGNED MESSAGE-----
 
-February 9, 1997
+October 13, 1997
 
-This is MacPGP.pm 1.0, a Perl interface to MacPGP 2.6.3.
+This is MacPGP.pm 1.1, a Perl interface to MacPGP 2.6.3.
 
 REQUIREMENTS:
 *MacPGP 2.6.3 is REQUIRED!  See the pod documentation for more info.
@@ -10,6 +10,7 @@ REQUIREMENTS:
     AppleEvents library.
 *You might have to give MacPerl an extra meg of memory, I've had some
     problems with it quitting out on me.
+*Mac::Apps::Launch is required
 
 To install it, just drop the file MacPGP.pm in the directory
 lib:Mac:Apps (this has changed from the beta 2).  Carefully look over
@@ -22,7 +23,7 @@ See the embedded pod for more information.
 
 This archive can always be obtained from:
 
-    http://pudge.net/macpgp/
+    http://pudge.net/macperl/
     http://perl.com/CPAN/authors/id/CNANDOR/
     http://perl.com/CPAN/modules/by-module/Mac/
 
@@ -37,19 +38,17 @@ confirm that it is my singature to the file MacPGP.pm.
 I think that is about it.  Let me know how things work out, and any
 bugs, typos, suggestions, or anything else.
 
-#================================================================
-Chris Nandor                                      pudge@pobox.com
-PGP Key 1024/B76E72AD                           http://pudge.net/
-Keyfingerprint = 08 24 09 0B CE 73 CA 10  1F F7 7F 13 81 80 B6 B6
-
+- --
+Chris Nandor             pudge@pobox.com             http://pudge.net/
+%PGPKey=('B76E72AD',[1024,'0824 090B CE73 CA10  1FF7 7F13 8180 B6B6'])
 
 -----BEGIN PGP SIGNATURE-----
-Version: 2.6.3
-Charset: mac
+Version: PGPfreeware 5.0 for non-commercial use <http://www.pgp.com>
+Charset: noconv
 
-iQCVAwUBMv5y0ihcZja3bnKtAQEvWwP9F9XmmaT+Cij6IR99e/64FvvirinwPhuh
-CYPOrerVqczVAiL4qWpex0pJO2Fgb4Mba7yX3WIFK+NZLMy3h6kUC1rfkUqLe9ve
-V1ZhuVBxVVQpbnnqTpdn3CIWRrhYu9gX/iDrC22aEtr1GsI/O+JonokL/qJ7BRMO
-n7bNKf0oMNM=
-=vm1v
+iQCVAwUBNEKOkShcZja3bnKtAQHulgP9HkWi4WJbrkXOSy9J12+ZdkOrX6HwDFkF
+nMBTYceBa1lrKtnBzEVk5Wc0FdD2SgFwfLiwVoZZs6jps0yeyItkDYx0VucrRNR6
+xIAUkx6s5F5VkDfbdw0ryClc+JMB1F6VA70xNjB15jOgZoq5JWsom/1dTA8RAt5Z
+TKeV6Wy/Luw=
+=AIZJ
 -----END PGP SIGNATURE-----

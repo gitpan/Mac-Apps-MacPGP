@@ -5,7 +5,7 @@
 #  Interface to MacPGP 2.6.3
 #
 #  Created:       Chris Nandor (pudge@pobox.com)         31-Dec-96
-#  Last Modified: Chris Nandor (pudge@pobox.com)         09-Feb-97
+#  Last Modified: Chris Nandor (pudge@pobox.com)         13-Oct-97
 #-----------------------------------------------------------------#
 package Mac::Apps::MacPGP;
 require 5.00201;
@@ -16,13 +16,12 @@ use Carp;
 @MacPGP::ISA = qw(Mac::Apps::MacPGP);
 @EXPORT = ();
 #-----------------------------------------------------------------
-$Mac::Apps::MacPGP::revision = '$Id: MacPGP.pm,v 1.0 1997/02/09 19:45 EST cnandor Exp $';
-$Mac::Apps::MacPGP::VERSION  = '1.0';
+$Mac::Apps::MacPGP::revision = '$Id: MacPGP.pm,v 1.1 1997/10/13 16:48 EDT cnandor Exp $';
+$Mac::Apps::MacPGP::VERSION  = '1.1';
 local($be) = '';
 #-----------------------------------------------------------------
 use Mac::AppleEvents;
-use Mac::Processes;
-use Mac::MoreFiles(%Application);
+use Mac::Apps::Launch;
 #=================================================================
 # Stuff
 #=================================================================
@@ -71,6 +70,7 @@ sub switchapp {
 sub quitpgp {
 	my($be) = AEBuildAppleEvent('aevt','quit',typeApplSignature,'MPGP',0,0,'') || croak $^E;
 	AESend($be, kAEWaitReply) || croak $^E;
+	AEDisposeDesc $be;
 }
 #=================================================================
 # Main subroutines
@@ -83,7 +83,8 @@ sub encrypt {
 	if (scalar(@{$p[2]})) 
 						{&_dObjData($p[2],'a')	}
 	elsif ($p[2])
-						{&_dObjData($p[2],'t')	} else {&_MpgpError('m','dObj') unless ($ev eq 'ncrd')}
+						{&_dObjData($p[2],'t')	}
+	else				{&_MpgpError('m','dObj') unless ($ev eq 'ncrd')}
 	if ($ev ne 'cncr') {
 		if (scalar(@{$p[3]})) 
 						{&_recvData($p[3],'a')	}
@@ -119,7 +120,8 @@ sub decrypt {
 	if (scalar(@{$p[2]}))
 						{&_dObjData($p[2],'a')	}
 	elsif ($p[2])
-						{&_dObjData($p[2],'t')	} else {&_MpgpError('m','dObj') unless ($ev eq 'dcrd')}
+						{&_dObjData($p[2],'t')	}
+	else				{&_MpgpError('m','dObj') unless ($ev eq 'dcrd')}
 	if ($p[3])			{&_passData($p[3])		}
 	if (defined $p[4])	{&_screData($p[4])		}
 	if (defined $p[5])	{&_nsigData($p[5])		}
@@ -137,7 +139,8 @@ sub sign {
 	if (scalar(@{$p[2]})) 
 						{&_dObjData($p[2],'a')	}
 	elsif ($p[2])
-						{&_dObjData($p[2],'t')	} else {&_MpgpError('m','dObj') unless ($ev eq 'sigd')}
+						{&_dObjData($p[2],'t')	}
+	else				{&_MpgpError('m','dObj') unless ($ev eq 'sigd')}
 	if ($p[3])			{&_passData($p[3])		}
 	if ($p[4])			{&_usidData($p[4])		}
 	if ($p[5])			{&_signData($p[5],'s')	}
@@ -505,20 +508,12 @@ sub _MpgpBTextArray {
 #=================================================================
 sub _MpgpLaunchApp {
 	my($app) = shift || 'MPGP';
-	my(%Launch);
-	tie %Launch, LaunchParam;
-	$Launch{launchControlFlags} = launchContinue+launchNoFileFlags+launchDontSwitch;
-	$Launch{launchAppSpec}		= $Application{$app};
-	LaunchApplication(\%Launch) orÊcroak $^E;
+	LaunchApps([$app],0);
 }
 #-----------------------------------------------------------------
 sub _MpgpFrontApp {
 	my($app) = @_;
-	my(%Launch);
-	tie %Launch, LaunchParam;
-	$Launch{launchControlFlags} = launchContinue+launchNoFileFlags;
-	$Launch{launchAppSpec}		= $Application{$app};
-	LaunchApplication(\%Launch) orÊcroak $^E;
+	LaunchApps([$app],1);
 }
 #-----------------------------------------------------------------
 sub _MpgpError {
@@ -567,12 +562,14 @@ sub _MpgpAePrint {
 #		$ar{'outp'} = (pack("H*",$ar{'outp'}));
 	}
 	$self->{results} = \%ar;
+	AEDisposeDesc $rp;
 	return $ar{result};
 }
 #-----------------------------------------------------------------
 sub _MpgpAeProcess {
 	my($self) = shift;
 	my($rp) = AESend($be, kAEWaitReply) || croak $^E;
+	AEDisposeDesc $be;
 	return &_MpgpAePrint($self,$rp);
 }
 #-----------------------------------------------------------------#
@@ -594,6 +591,8 @@ MacPGP.pm
 MacPerl interface to MacPGP 2.6.3.  Older versions WILL NOT WORK.  The MIT version, MacPGP 2.6.2, does not support nearly the number of AppleEvents as does 2.6.3.  For those outside the U.S., you will not be able to download the program; but there are International versions.  Perhaps in the future I will add support for those.  Many of the functions should work fine for those, actually, but I imagine some will not.
 
 MacPerl 5.1.1 (released January 1997) or higher is also required because of bugs in the AppleEvents library in previous versions.
+
+Also required is the Mac::Apps::Launch module.
 
 =head1 NOTES
 
@@ -1031,6 +1030,10 @@ $object->quitpgp;
 
 =head1 VERSION NOTES
 
+=item v.1.1, October 13, 1997
+
+Get app launching from Mac::Apps::Launch, fixed descriptor disposing.
+
 =item v.1.0, February 9, 1997
 
 First full release.
@@ -1117,7 +1120,7 @@ Included with the above package, take special note of the PGP User's Guide, MacP
 
 =head1 AUTHOR / COPYRIGHT
 
-Chris Nandor, 09-Feb-1997
+Chris Nandor, 13-Oct-1997
 
 	mailto:pudge@pobox.com
 	http://pudge.net/

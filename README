@@ -1,0 +1,145 @@
+-----BEGIN PGP SIGNED MESSAGE-----
+
+To MacPGP.pm beta testers:
+
+NOTES:
+*MacPGP 2.6.3 is REQUIRED!  See the pod documentation for more info.
+*MacPerl 5.1.1 (just released in January 1997) is REQUIRED for fixed
+    AppleEvents library.
+*You might have to give MacPerl an extra meg of memory, I've had  some
+    problems with it quitting out on me.
+
+This is BETA software.  No warranties are expressed or implied.  Beta3 is 
+simply a switch to .tar.gz instead of .sit.hqx.
+
+It's finally ready for you all to test out.  To install it, just drop
+the file MacPGP.pm in the directory lib:Mac:Apps (this has
+changed from the previous release).  Carefully look over the pod
+documentation that is included in the MacPGP.pm file.  You can view it
+with Shuck (which accompanies MacPerl 5.1.1) or with the pod2x
+translators in the MacPerl pod directory.
+
+There are quite a few changes from the previous release, most notable
+in the interface are the name of the module and the four new methods
+(switchapp, getresults, getresultsall, quitpgp).  See the embedded pod
+for more information.
+
+I included these files:
+
+extractkey.pl           --  test
+MacPGP.AE.frontier.txt  --  AppleEvents docs
+macpgp.pl               --  test script
+MacPGP.pm               --  module
+Macpgp.pm.asc           --  signature file for module
+pgptest.txt             --  text for test script
+README                  --  this file
+
+Once you put MacPGP.pm in Mac:Apps, you can run pgptest.txt with
+macpgp.pl.  I prefer using the "Perl Filters" BBEdit extension; you can
+just drop the macperl.pl file in your Perl Filters directory, open
+pgptest.txt, and run the macperl.pl script as a filter on the txt file.
+The BBEdit/MacPerl extensions can be obtained at:
+
+    http://members.aol.com/bradh5/bbedit_extensions.html
+
+This is how the script works (though to really test the module, you
+should write your own scripts and implementations):
+
+The script looks at the first line of the file.  If it is "-----BEGIN
+PGP MESSAGE-----" then it sends it to be decrypted.  Otherwise, it
+tries to see if there is delimited text in the form |x|pass|recv|.
+
+x is either e(ncrypt), d(ecrypt), or s(ign).  pass is your password.
+recv is a space-delimited list of recipients.  If you do not specify a
+recipient, then the script brings up a window of all available keys in
+your public keyring and you get to pick one (for testing purposes, I
+always pick myself!).
+
+extractkey.pl is a script that simply grabs my public key and tosses it
+in the clipboard.
+
+MacPGP.AE.frontier.txt is an export of AppleEvent info I was able to
+cull using Frontier.
+
+Here are all of the methods.  Check the pod documentation for more info.
+
+    use Mac::Apps::MacPGP;
+    $macpgp = new MacPGP;
+    $macpgp->encrypt();
+    $macpgp->decrypt();
+    $macpgp->sign();
+    $macpgp->asciify();
+    $macpgp->execute();
+    $macpgp->keyring();
+    $macpgp->generate();
+    $macpgp->extract();
+    $macpgp->logfile();
+    $macpgp->window();
+    $macpgp->clip2file();
+    $macpgp->file2clip();
+    $macpgp->checksignresult();
+    $macpgp->getlasterror();
+    $macpgp->getversion();
+    $macpgp->switchapp();
+    $macpgp->getresults();
+    $macpgp->getresultsall();
+    $macpgp->quitpgp();
+
+Oh, and here is the location to get the files:
+
+    http://pudge.net/macpgp/
+
+        or
+        
+    http://perl.com/CPAN/authors/id/CNANDOR/
+
+The file is a tarred, gzipped file.  After you use Stuffit Expander
+or a similar program to get at the archive, you can use the file
+Macpgp.pm.asc to determine whether or not the file came from me.
+
+First you have to have my key in your public keyring (it is included
+directly below).  Then decrypt the file Macpgp.pm.asc with MacPGP.
+MacPGP will confirm that it is my singature to the file MacPGP.pm.
+
+I think that is about it.  Let me know how things work out, and any
+bugs, typos, suggestions, or anything else.
+
+#================================================================
+perl -e 'srand();if(rand>.5){$i=0;foreach(@ARGV){@$i=split(//);$z
+[$i]=0;foreach(@$i){$s[$i][$z[$i]]=$_;$z[$i]++;}$i++;}foreach(@s)
+{foreach(@$_) {print}print" ";$_++}}else{print(join(" ", @ARGV))}
+print"\n"' McClellan Clan Motto: Think On
+
+Chris Nandor                                      pudge@pobox.com
+PGP Key 0xB76E72AD                              http://pudge.net/
+
+
+-----BEGIN PGP SIGNATURE-----
+Version: 2.6.3
+Charset: mac
+
+iQCVAwUBMt1D9ChcZja3bnKtAQEd5gQAgvqgAoU2gLFVI1t/yUb6ztjjiZTASFXR
+jOMjGWk1gDjXKWV5UoVvgVps0v4YL5pNNDOzsXtpeOB++/PMWi0FxFQQeS5vCeud
+qWmkcPDTcUOWlNF+u9ivb/AikV08WQo5tCdLFudaBSKQekt/K/ilvKn/xM1v7CwF
+IYMet1OzAj8=
+=nTn4
+-----END PGP SIGNATURE-----
+
+-----BEGIN PGP PUBLIC KEY BLOCK-----
+Version: 2.6.3
+
+mQCPAzH5OFUAAAEEANDOoKNWqPRh9xZNbVQCaiV1F+efrM6ORyqiyENI1cfIlfr/
+/Z4Lb4pijYvH79XXzutfgN3CrkGhAAmreF9DRbHukCiBqnh9ZqJY1EZJMXOADuxk
+y/eeewuezTgJ2PXapxFBPjpxIfbFZYQLop5MZgBH2Za4DUyP7yhcZja3bnKtABEB
+AAG0IENocmlzIE5hbmRvciA8Y25hbmRvckBwb2JveC5jb20+iQCVAwUQMs1SjShc
+Zja3bnKtAQERwwQAk8jWSFn1t/stIoyrkIlxnawgIPF9vCXhRvyVa8BEOcB472ki
+uwtSe2otTsYy6QWEr1y/Zx8Ub5PO4XCaktrZ3KaxecbnWXpYhwMP4DlZfKVLxJVH
+DxcsL9rH3jGYDA3EIv3/IG2FHFDqC6TTATXDZCI/H8wRxutLc64U3lD04Mq0HkNo
+cmlzIE5hbmRvciA8cHVkZ2VAcG9ib3guY29tPokAlQMFEDLNUl4oXGY2t25yrQEB
+VosEAMN4zNoo0QmHihrqEd5dlqNIv+bXw0NsO9oqn59hjwKhMysd8Qh4LJ/l6RKq
+ithzBGlSgwLasHrVB/znnU+ODYojh+WcAKQ3H4KCOk5Clt4cr9laGuERZ8baX7Hh
+5RPxG4I6aYmc5oIE0z5lKsaKEAvzT1L3kBnEdYFwfHo298PEtCNDaHJpcyBOYW5k
+b3IgPGNocmlzbkBwZXRlcnNvbnMuY29tPrQkQ2hyaXMgTmFuZG9yIDxjaHJpc0Bp
+c2FhYy5iaW9sYS5lZHU+tB1DaHJpcyBOYW5kb3IgPHB1ZGdlQHBjaXguY29tPg==
+=UZ8c
+-----END PGP PUBLIC KEY BLOCK-----
